@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Program - GZCLP Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-edit me-2"></i>Edit Program</h1>
+                <h4 class="text-muted">{{ program.name }}</h4>
+            </div>
+            <a href="{{ url_for('settings') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Settings
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Program Info -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Program Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted">Days Per Week</h6>
+                            <h3 class="text-primary">{{ program.days_per_week }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted">Program Length</h6>
+                            <h3 class="text-warning">{{ program.length_weeks }} weeks</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted">Days Configured</h6>
+                            <h3 class="text-success">{{ program.program_days|length }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted">Status</h6>
+                            {% if program.is_active %}
+                                <span class="badge bg-success fs-6">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Program Days -->
+<div class="row">
+    {% for day_num in range(1, program.days_per_week + 1) %}
+        {% set existing_day = program.program_days | selectattr('day_number', 'equalto', day_num) | first %}
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-calendar-day me-2"></i>Day {{ day_num }}</h5>
+                    {% if existing_day %}
+                        <span class="badge bg-success">Configured</span>
+                    {% else %}
+                        <span class="badge bg-warning">Not Set</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if existing_day %}
+                        <!-- Show existing day configuration -->
+                        <div class="mb-3">
+                            <h6><i class="fas fa-fire text-primary me-2"></i>T1 - {{ existing_day.t1_exercise }}</h6>
+                            <p class="mb-0">
+                                Start: {{ existing_day.t1_start_weight }} kg, 
+                                Increment: +{{ existing_day.t1_increment }} kg/week
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-bolt text-warning me-2"></i>T2 - {{ existing_day.t2_exercise }}</h6>
+                            <p class="mb-0">
+                                Start: {{ existing_day.t2_start_weight }} kg, 
+                                Increment: +{{ existing_day.t2_increment }} kg/week
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-heart text-success me-2"></i>T3 Exercises</h6>
+                            {% set t3_exercises = existing_day.t3_exercises | from_json %}
+                            {% for exercise in t3_exercises %}
+                                <p class="mb-1 small">
+                                    {{ exercise.name }}: {{ exercise.start_weight }} kg (+{{ exercise.increment }} kg/week)
+                                </p>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <!-- Show form for new day -->
+                        <form method="POST" action="{{ url_for('save_program_day', program_id=program.id) }}">
+                            {{ form.hidden_tag() }}
+                            <input type="hidden" name="day_number" value="{{ day_num }}">
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-fire text-primary me-2"></i>T1 Exercise</label>
+                                <select class="form-select" name="t1_exercise" required>
+                                    <option value="">Select T1 Exercise...</option>
+                                    <option value="Squat (Barbell)">Squat (Barbell)</option>
+                                    <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
+                                    <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
+                                    <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
+                                </select>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Start Weight (kg)</label>
+                                    <input type="number" class="form-control" name="t1_start_weight" 
+                                           step="0.5" placeholder="60" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Weekly Increment</label>
+                                    <select class="form-select" name="t1_increment" required>
+                                        <option value="2.5">2.5 kg</option>
+                                        <option value="5.0">5.0 kg</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-bolt text-warning me-2"></i>T2 Exercise</label>
+                                <select class="form-select" name="t2_exercise" required>
+                                    <option value="">Select T2 Exercise...</option>
+                                    <option value="Squat (Barbell)">Squat (Barbell)</option>
+                                    <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
+                                    <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
+                                    <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
+                                    <option value="Chest Press (Machine)">Chest Press (Machine)</option>
+                                    <option value="Flat Bench Press (Barbell)">Flat Bench Press (Barbell)</option>
+                                    <option value="Flat Bench Press (Dumbbell)">Flat Bench Press (Dumbbell)</option>
+                                    <option value="Flat Bench Press (Smith Machine)">Flat Bench Press (Smith Machine)</option>
+                                    <option value="Incline Bench Press (Barbell)">Incline Bench Press (Barbell)</option>
+                                    <option value="Incline Bench Press (Dumbbell)">Incline Bench Press (Dumbbell)</option>
+                                    <option value="Incline Bench Press (Smith Machine)">Incline Bench Press (Smith Machine)</option>
+                                    <option value="Incline Chest Press (Machine)">Incline Chest Press (Machine)</option>
+                                    <option value="Romanian Deadlift (Barbell)">Romanian Deadlift (Barbell)</option>
+                                    <option value="Romanian Deadlift (Dumbbell)">Romanian Deadlift (Dumbbell)</option>
+                                    <option value="Front Squat (Barbell)">Front Squat (Barbell)</option>
+                                    <option value="Leg Press (Machine)">Leg Press (Machine)</option>
+                                    <option value="Bulgarian Split Squat">Bulgarian Split Squat</option>
+                                    <option value="Goblet Squat">Goblet Squat</option>
+                                    <option value="Weighted Lunges">Weighted Lunges</option>
+                                    <option value="Shoulder Press (Barbell)">Shoulder Press (Barbell)</option>
+                                    <option value="Shoulder Press (Dumbbell)">Shoulder Press (Dumbbell)</option>
+                                    <option value="Shoulder Press (Machine)">Shoulder Press (Machine)</option>
+                                </select>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Start Weight (kg)</label>
+                                    <input type="number" class="form-control" name="t2_start_weight" 
+                                           step="0.5" placeholder="50" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Weekly Increment</label>
+                                    <select class="form-select" name="t2_increment" required>
+                                        <option value="2.5">2.5 kg</option>
+                                        <option value="5.0">5.0 kg</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- T3 Exercise 1 -->
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 1</label>
+                                <select class="form-select" name="t3_exercise_1">
+                                    <option value="">None</option>
+                                    <optgroup label="Main Compounds">
+                                        <option value="Squat (Barbell)">Squat (Barbell)</option>
+                                        <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
+                                        <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
+                                        <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
+                                    </optgroup>
+                                    <optgroup label="Assistance Work">
+                                        <option value="Bicep Curl (Dumbbell)">Bicep Curl (Dumbbell)</option>
+                                        <option value="Bicep Curl (Barbell)">Bicep Curl (Barbell)</option>
+                                        <option value="Bicep Curl (Cables)">Bicep Curl (Cables)</option>
+                                        <option value="Tricep Pushdowns (Cables)">Tricep Pushdowns (Cables)</option>
+                                        <option value="Lateral Raises (Dumbbell)">Lateral Raises (Dumbbell)</option>
+                                        <option value="Lateral Raises (Cables)">Lateral Raises (Cables)</option>
+                                        <option value="Dips">Dips</option>
+                                        <option value="Chest Flyes (Dumbbell)">Chest Flyes (Dumbbell)</option>
+                                        <option value="Rear Delt Fly (Dumbbell)">Rear Delt Fly (Dumbbell)</option>
+                                        <option value="Leg Curl (Machine)">Leg Curl (Machine)</option>
+                                        <option value="Leg Extension (Machine)">Leg Extension (Machine)</option>
+                                        <option value="Calf Raise on Leg Press Machine">Calf Raise on Leg Press Machine</option>
+                                        <option value="Standing Calf Raise">Standing Calf Raise</option>
+                                        <option value="Ab Machine">Ab Machine</option>
+                                        <option value="Cable Crunch">Cable Crunch</option>
+                                        <option value="Lat Pulldown">Lat Pulldown</option>
+                                        <option value="Seated Row (Machine)">Seated Row (Machine)</option>
+                                        <option value="Bent Over Row (Barbell)">Bent Over Row (Barbell)</option>
+                                        <option value="Shrugs">Shrugs</option>
+                                        <option value="Weighted Hyperextensions">Weighted Hyperextensions</option>
+                                        <option value="Assisted Pullup (Band)">Assisted Pullup (Band)</option>
+                                        <option value="Strict Pullup">Strict Pullup</option>
+                                        <option value="Push-ups">Push-ups</option>
+                                        <option value="Diamond Push-ups">Diamond Push-ups</option>
+                                        <option value="Clapping Push-ups">Clapping Push-ups</option>
+                                        <option value="Planks">Planks</option>
+                                        <option value="GHD Back Extensions">GHD Back Extensions</option>
+                                        <option value="Side Planks">Side Planks</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Start Weight (kg)</label>
+                                    <input type="number" class="form-control" name="t3_start_weight_1" 
+                                           step="0.5" placeholder="20">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Weekly Increment</label>
+                                    <select class="form-select" name="t3_increment_1">
+                                        <option value="">Select increment...</option>
+                                        <option value="2.5">2.5 kg</option>
+                                        <option value="5.0">5.0 kg</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- T3 Exercise 2 -->
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 2</label>
+                                <select class="form-select" name="t3_exercise_2">
+                                    <option value="">None</option>
+                                    <optgroup label="Main Compounds">
+                                        <option value="Squat (Barbell)">Squat (Barbell)</option>
+                                        <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
+                                        <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
+                                        <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
+                                    </optgroup>
+                                    <optgroup label="Assistance Work">
+                                        <option value="Bicep Curl (Dumbbell)">Bicep Curl (Dumbbell)</option>
+                                        <option value="Bicep Curl (Barbell)">Bicep Curl (Barbell)</option>
+                                        <option value="Bicep Curl (Cables)">Bicep Curl (Cables)</option>
+                                        <option value="Tricep Pushdowns (Cables)">Tricep Pushdowns (Cables)</option>
+                                        <option value="Lateral Raises (Dumbbell)">Lateral Raises (Dumbbell)</option>
+                                        <option value="Lateral Raises (Cables)">Lateral Raises (Cables)</option>
+                                        <option value="Dips">Dips</option>
+                                        <option value="Chest Flyes (Dumbbell)">Chest Flyes (Dumbbell)</option>
+                                        <option value="Rear Delt Fly (Dumbbell)">Rear Delt Fly (Dumbbell)</option>
+                                        <option value="Leg Curl (Machine)">Leg Curl (Machine)</option>
+                                        <option value="Leg Extension (Machine)">Leg Extension (Machine)</option>
+                                        <option value="Calf Raise on Leg Press Machine">Calf Raise on Leg Press Machine</option>
+                                        <option value="Standing Calf Raise">Standing Calf Raise</option>
+                                        <option value="Ab Machine">Ab Machine</option>
+                                        <option value="Cable Crunch">Cable Crunch</option>
+                                        <option value="Lat Pulldown">Lat Pulldown</option>
+                                        <option value="Seated Row (Machine)">Seated Row (Machine)</option>
+                                        <option value="Bent Over Row (Barbell)">Bent Over Row (Barbell)</option>
+                                        <option value="Shrugs">Shrugs</option>
+                                        <option value="Weighted Hyperextensions">Weighted Hyperextensions</option>
+                                        <option value="Assisted Pullup (Band)">Assisted Pullup (Band)</option>
+                                        <option value="Strict Pullup">Strict Pullup</option>
+                                        <option value="Push-ups">Push-ups</option>
+                                        <option value="Diamond Push-ups">Diamond Push-ups</option>
+                                        <option value="Clapping Push-ups">Clapping Push-ups</option>
+                                        <option value="Planks">Planks</option>
+                                        <option value="GHD Back Extensions">GHD Back Extensions</option>
+                                        <option value="Side Planks">Side Planks</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Start Weight (kg)</label>
+                                    <input type="number" class="form-control" name="t3_start_weight_2" 
+                                           step="0.5" placeholder="20">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Weekly Increment</label>
+                                    <select class="form-select" name="t3_increment_2">
+                                        <option value="">Select increment...</option>
+                                        <option value="2.5">2.5 kg</option>
+                                        <option value="5.0">5.0 kg</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- T3 Exercise 3 -->
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 3</label>
+                                <select class="form-select" name="t3_exercise_3">
+                                    <option value="">None</option>
+                                    <optgroup label="Main Compounds">
+                                        <option value="Squat (Barbell)">Squat (Barbell)</option>
+                                        <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
+                                        <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
+                                        <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
+                                    </optgroup>
+                                    <optgroup label="Assistance Work">
+                                        <option value="Bicep Curl (Dumbbell)">Bicep Curl (Dumbbell)</option>
+                                        <option value="Bicep Curl (Barbell)">Bicep Curl (Barbell)</option>
+                                        <option value="Bicep Curl (Cables)">Bicep Curl (Cables)</option>
+                                        <option value="Tricep Pushdowns (Cables)">Tricep Pushdowns (Cables)</option>
+                                        <option value="Lateral Raises (Dumbbell)">Lateral Raises (Dumbbell)</option>
+                                        <option value="Lateral Raises (Cables)">Lateral Raises (Cables)</option>
+                                        <option value="Dips">Dips</option>
+                                        <option value="Chest Flyes (Dumbbell)">Chest Flyes (Dumbbell)</option>
+                                        <option value="Rear Delt Fly (Dumbbell)">Rear Delt Fly (Dumbbell)</option>
+                                        <option value="Leg Curl (Machine)">Leg Curl (Machine)</option>
+                                        <option value="Leg Extension (Machine)">Leg Extension (Machine)</option>
+                                        <option value="Calf Raise on Leg Press Machine">Calf Raise on Leg Press Machine</option>
+                                        <option value="Standing Calf Raise">Standing Calf Raise</option>
+                                        <option value="Ab Machine">Ab Machine</option>
+                                        <option value="Cable Crunch">Cable Crunch</option>
+                                        <option value="Lat Pulldown">Lat Pulldown</option>
+                                        <option value="Seated Row (Machine)">Seated Row (Machine)</option>
+                                        <option value="Bent Over Row (Barbell)">Bent Over Row (Barbell)</option>
+                                        <option value="Shrugs">Shrugs</option>
+                                        <option value="Weighted Hyperextensions">Weighted Hyperextensions</option>
+                                        <option value="Assisted Pullup (Band)">Assisted Pullup (Band)</option>
+                                        <option value="Strict Pullup">Strict Pullup</option>
+                                        <option value="Push-ups">Push-ups</option>
+                                        <option value="Diamond Push-ups">Diamond Push-ups</option>
+                                        <option value="Clapping Push-ups">Clapping Push-ups</option>
+                                        <option value="Planks">Planks</option>
+                                        <option value="GHD Back Extensions">GHD Back Extensions</option>
+                                        <option value="Side Planks">Side Planks</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Start Weight (kg)</label>
+                                    <input type="number" class="form-control" name="t3_start_weight_3" 
+                                           step="0.5" placeholder="20">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Weekly Increment</label>
+                                    <select class="form-select" name="t3_increment_3">
+                                        <option value="">Select increment...</option>
+                                        <option value="2.5">2.5 kg</option>
+                                        <option value="5.0">5.0 kg</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save me-2"></i>Save Day {{ day_num }}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Program Overview -->
+{% if program.program_days %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Program Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>T1 Exercise</th>
+                                <th>T2 Exercise</th>
+                                <th>T3 Exercises</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in program.program_days %}
+                            <tr>
+                                <td><strong>Day {{ day.day_number }}</strong></td>
+                                <td>{{ day.t1_exercise }}</td>
+                                <td>{{ day.t2_exercise }}</td>
+                                <td>
+                                    {% set t3_exercises = day.t3_exercises | from_json %}
+                                    {% for exercise in t3_exercises %}
+                                        {{ exercise.name }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Program Ready!</h6>
+                    <p class="mb-0">
+                        Your program is configured and ready to use. 
+                        {% if program.is_active %}
+                            It's currently your active program and will be used for workout tracking.
+                        {% else %}
+                            <a href="{{ url_for('set_active_program', program_id=program.id) }}" class="btn btn-sm btn-primary">
+                                Set as Active Program
+                            </a>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add custom Jinja filter for JSON parsing
+    function parseJson(jsonString) {
+        try {
+            return JSON.parse(jsonString);
+        } catch (e) {
+            return [];
+        }
+    }
+</script>
+{% endblock %}

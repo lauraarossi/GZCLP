@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - GZCLP Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-cog me-2"></i>Program Settings</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('toggle_units') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-balance-scale me-2"></i>{{ user.units.title() }} Units
+                </a>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProgramModal">
+                    <i class="fas fa-plus me-2"></i>New Program
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Units Display -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Current Units:</strong> {{ user.units.title() }} 
+            {% if user.units == 'metric' %}
+                (kg) - Click the units button to switch to Imperial (lbs)
+            {% else %}
+                (lbs) - Click the units button to switch to Metric (kg)
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Programs List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Your Programs</h5>
+            </div>
+            <div class="card-body">
+                {% if programs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Program Name</th>
+                                    <th>Days/Week</th>
+                                    <th>Length</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for program in programs %}
+                                <tr class="{% if program.is_active %}table-success{% endif %}">
+                                    <td>
+                                        <strong>{{ program.name }}</strong>
+                                        {% if program.is_active %}
+                                            <span class="badge bg-success ms-2">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ program.days_per_week }} days</td>
+                                    <td>{{ program.length_weeks }} weeks</td>
+                                    <td>
+                                        {% if program.is_active %}
+                                            <span class="text-success"><i class="fas fa-check-circle"></i> Active</span>
+                                        {% else %}
+                                            <span class="text-muted"><i class="fas fa-circle"></i> Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ program.created_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if not program.is_active %}
+                                                <a href="{{ url_for('set_active_program', program_id=program.id) }}" 
+                                                   class="btn btn-outline-primary" title="Set as Active">
+                                                    <i class="fas fa-play"></i>
+                                                </a>
+                                            {% endif %}
+                                            <a href="{{ url_for('edit_program', program_id=program.id) }}" 
+                                               class="btn btn-outline-secondary" title="Edit Program">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-dumbbell fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Programs Yet</h5>
+                        <p class="text-muted">Create your first GZCLP program to get started!</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProgramModal">
+                            <i class="fas fa-plus me-2"></i>Create First Program
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Program Modal -->
+<div class="modal fade" id="createProgramModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create New Program</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_program') }}">
+                {{ form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control") }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.days_per_week.label(class="form-label") }}
+                            {{ form.days_per_week(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.length_weeks.label(class="form-label") }}
+                            {{ form.length_weeks(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Program Structure</h6>
+                        <p class="mb-0">Each workout day will include:</p>
+                        <ul class="mb-0">
+                            <li><strong>T1:</strong> 1 main compound exercise (3×5 reps)</li>
+                            <li><strong>T2:</strong> 1 secondary exercise (3×10 reps)</li>
+                            <li><strong>T3:</strong> 1-3 assistance exercises (3×15+ reps)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Program
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- GZCLP Guidelines -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>GZCLP Program Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-fire text-primary me-2"></i>T1 - Main Compound</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Bench Press, Squat, Deadlift, OHP</li>
+                            <li>• 3 sets × 5 reps</li>
+                            <li>• 3-5 minutes rest</li>
+                            <li>• Weekly progression: +{{ '2.5-5 kg' if user.units == 'metric' else '5-10 lbs' }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-bolt text-warning me-2"></i>T2 - Secondary</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Variations of main lifts</li>
+                            <li>• 3 sets × 10 reps</li>
+                            <li>• 2-3 minutes rest</li>
+                            <li>• Weekly progression: +{{ '2.5-5 kg' if user.units == 'metric' else '5-10 lbs' }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-heart text-success me-2"></i>T3 - Assistance</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Isolation exercises</li>
+                            <li>• 3 sets × 15+ reps</li>
+                            <li>• 60-90 seconds rest</li>
+                            <li>• Weekly progression: +{{ '2.5 kg' if user.units == 'metric' else '5 lbs' }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Progression Tips</h6>
+                    <ul class="mb-0">
+                        <li><strong>Start Conservative:</strong> Begin with weights you can handle for the prescribed reps</li>
+                        <li><strong>Linear Progression:</strong> Add weight each week as specified in your program</li>
+                        <li><strong>Deload:</strong> If you fail to complete sets, reduce weights by 10-15% and restart progression</li>
+                        <li><strong>Rest Days:</strong> Ensure adequate rest between workout days</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

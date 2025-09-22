@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Track Workout - GZCLP Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-chart-line me-2"></i>Track Workout</h1>
+                <h5 class="text-muted">{{ active_program.name }}</h5>
+            </div>
+            <div class="text-muted">
+                <i class="fas fa-calendar me-1"></i>{{ moment().format('MMMM Do, YYYY') if moment else 'Today' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Program Days Selection -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-day me-2"></i>Select Workout Day</h5>
+            </div>
+            <div class="card-body">
+                {% if program_days %}
+                    <div class="row">
+                        {% for day in program_days %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100 workout-day-card" data-day="{{ day.day_number }}">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Day {{ day.day_number }}</h5>
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary">T1</span>
+                                        <small class="d-block">{{ day.t1_exercise }}</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning">T2</span>
+                                        <small class="d-block">{{ day.t2_exercise }}</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="badge bg-success">T3</span>
+                                        {% set t3_exercises = day.t3_exercises | from_json %}
+                                        {% for exercise in t3_exercises %}
+                                            <small class="d-block">{{ exercise.name }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="selectDay({{ day.day_number }})">
+                                        Select This Day
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                        <h5>No Workout Days Configured</h5>
+                        <p class="text-muted">Please configure your program days in Settings first.</p>
+                        <a href="{{ url_for('settings') }}" class="btn btn-primary">
+                            <i class="fas fa-cog me-2"></i>Configure Program
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workout Tracking (Hidden initially) -->
+<div id="workout-tracking" class="row" style="display: none;">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-dumbbell me-2"></i>Workout: Day <span id="selected-day-number"></span></h5>
+            </div>
+            <div class="card-body">
+                <div id="exercise-list">
+                    <!-- Exercises will be populated by JavaScript -->
+                </div>
+                
+                <div class="mt-4">
+                    <button class="btn btn-success btn-lg" onclick="completeWorkout()">
+                        <i class="fas fa-check me-2"></i>Complete Workout
+                    </button>
+                    <button class="btn btn-outline-secondary btn-lg ms-2" onclick="cancelWorkout()">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calculator me-2"></i>Weight Calculator</h5>
+            </div>
+            <div class="card-body">
+                <div id="weight-calculator">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>Select an exercise to see recommended weights</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Current Week</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="text-primary mb-0">Week {{ current_week }}</h3>
+                <small class="text-muted">
+                    {% if current_week == 1 %}
+                        Starting weights
+                    {% else %}
+                        Progressive weights
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar me-2"></i>Tier Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <div class="tier-guideline tier-t1 mb-3">
+                    <h6><i class="fas fa-fire text-primary me-2"></i>T1 - Main Compound</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li>• 3 sets × 5 reps</li>
+                        <li>• 3-5 min rest</li>
+                    </ul>
+                </div>
+                <div class="tier-guideline tier-t2 mb-3">
+                    <h6><i class="fas fa-bolt text-warning me-2"></i>T2 - Secondary</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li>• 3 sets × 10 reps</li>
+                        <li>• 2-3 min rest</li>
+                    </ul>
+                </div>
+                <div class="tier-guideline tier-t3">
+                    <h6><i class="fas fa-heart text-success me-2"></i>T3 - Assistance</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li>• 3 sets × 15+ reps</li>
+                        <li>• 60-90 sec rest</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Workouts -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history me-2"></i>Recent Workouts</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Exercises</th>
+                                <th>Volume</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_workouts %}
+                                {% for workout in recent_workouts %}
+                                <tr>
+                                    <td>{{ workout.date.strftime('%B %d, %Y') }}</td>
+                                    <td><span class="badge bg-primary">Day {{ workout.program_day.day_number if workout.program_day else 'N/A' }}</span></td>
+                                    <td>
+                                        {% if workout.program_day %}
+                                            {{ workout.program_day.t1_exercise }}, {{ workout.program_day.t2_exercise }}
+                                            {% set t3_exercises = workout.program_day.t3_exercises | from_json %}
+                                            {% for exercise in t3_exercises %}
+                                                , {{ exercise.name }}
+                                            {% endfor %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ workout.sets_completed or 'N/A' }}</td>
+                                    <td>N/A</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-dumbbell fa-2x mb-2"></i><br>
+                                        No workouts logged yet. Start your first workout above!
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedDay = null;
+    let programDays = {{ serializable_program_days | tojson }};
+    let currentWeek = {{ current_week }};
+    
+    function selectDay(dayNumber) {
+        selectedDay = dayNumber;
+        document.getElementById('selected-day-number').textContent = dayNumber;
+        
+        // Hide day selection cards
+        document.querySelectorAll('.workout-day-card').forEach(card => {
+            card.style.display = 'none';
+        });
+        
+        // Show workout tracking
+        document.getElementById('workout-tracking').style.display = 'block';
+        
+        // Populate exercises for selected day
+        populateExercises(dayNumber);
+        
+        // Scroll to workout tracking
+        document.getElementById('workout-tracking').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function populateExercises(dayNumber) {
+        const day = programDays.find(d => d.day_number === dayNumber);
+        if (!day) return;
+        
+        const exerciseList = document.getElementById('exercise-list');
+        exerciseList.innerHTML = '';
+        
+        // T1 Exercise
+        addExerciseCard('T1', day.t1_exercise, day.t1_start_weight, day.t1_current_weight, day.t1_increment, 'primary');
+        
+        // T2 Exercise
+        addExerciseCard('T2', day.t2_exercise, day.t2_start_weight, day.t2_current_weight, day.t2_increment, 'warning');
+        
+        // T3 Exercises
+        const t3Exercises = day.t3_exercises_parsed || JSON.parse(day.t3_exercises);
+        t3Exercises.forEach((exercise, index) => {
+            const currentWeight = exercise.current_weight || exercise.start_weight;
+            addExerciseCard('T3', exercise.name, exercise.start_weight, currentWeight, exercise.increment, 'success', index);
+        });
+    }
+    
+    function addExerciseCard(tier, name, startWeight, currentWeight, increment, badgeColor, index = 0) {
+        const exerciseList = document.getElementById('exercise-list');
+        const cardHtml = `
+            <div class="card mb-3 tier-${tier.toLowerCase()}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="card-title mb-1">
+                                <span class="badge bg-${badgeColor}">${tier}</span> ${name}
+                            </h6>
+                            <small class="text-muted">Start: ${startWeight} kg, Increment: +${increment} kg/week</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="h5 mb-0">${currentWeight} kg</div>
+                            <small class="text-muted">Week ${currentWeek} Weight</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Sets</label>
+                            <input type="number" class="form-control" value="3" min="1" max="10" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Reps</label>
+                            <input type="number" class="form-control" value="${tier === 'T1' ? '5' : tier === 'T2' ? '10' : '15'}" min="1" max="50">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Weight (kg)</label>
+                            <input type="number" class="form-control weight-input" value="${currentWeight}" step="0.5">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Completed</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="completed-${tier}-${index}">
+                                <label class="form-check-label" for="completed-${tier}-${index}">Done</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        exerciseList.insertAdjacentHTML('beforeend', cardHtml);
+    }
+    
+    function completeWorkout() {
+        // Collect workout data and submit
+        alert('Workout completed! (This would save to database)');
+        cancelWorkout();
+    }
+    
+    function cancelWorkout() {
+        selectedDay = null;
+        
+        // Show day selection cards
+        document.querySelectorAll('.workout-day-card').forEach(card => {
+            card.style.display = 'block';
+        });
+        
+        // Hide workout tracking
+        document.getElementById('workout-tracking').style.display = 'none';
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Weight input change handlers
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('weight-input')) {
+            // Update weight calculator if needed
+            updateWeightCalculator();
+        }
+    });
+    
+    function updateWeightCalculator() {
+        // This would update the weight calculator based on selected exercise
+        const calculator = document.getElementById('weight-calculator');
+        calculator.innerHTML = `
+            <div class="text-center">
+                <h6>Current Week: 1</h6>
+                <p class="text-muted">All weights are starting weights for Week 1</p>
+                <div class="alert alert-info">
+                    <small>Next week, all weights will automatically increase by their increment values.</small>
+                </div>
+            </div>
+        `;
+    }
+</script>
+{% endblock %}
