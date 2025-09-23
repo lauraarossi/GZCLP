@@ -56,8 +56,23 @@
 
                                 {% if log.sets_completed %}
                                 <div class="mb-3">
-                                    <h6 class="text-muted mb-2">Sets Completed:</h6>
-                                    <p class="mb-0">{{ log.sets_completed }}</p>
+                                    <h6 class="text-muted mb-2">Performance:</h6>
+                                    {% set exercises_data = log.sets_completed | from_json %}
+                                    <div class="performance-summary">
+                                        {% for exercise in exercises_data %}
+                                        <div class="performance-item mb-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-{{ 'primary' if exercise.tier == 'T1' else 'warning' if exercise.tier == 'T2' else 'success' }} me-2">{{ exercise.tier }}</span>
+                                                <span class="fw-bold">{{ exercise.name }}</span>
+                                            </div>
+                                            <div class="ms-4">
+                                                <small class="text-muted">
+                                                    {{ exercise.performance }} at {{ exercise.weight }} {{ 'kg' if user.units == 'metric' else 'lbs' }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                                 {% endif %}
                             </div>
@@ -123,6 +138,19 @@
     font-size: 0.7rem;
     min-width: 30px;
     text-align: center;
+}
+
+.performance-summary {
+    font-size: 0.9rem;
+}
+
+.performance-item {
+    border-left: 3px solid #e9ecef;
+    padding-left: 0.5rem;
+}
+
+.performance-item:last-child {
+    margin-bottom: 0;
 }
 </style>
 {% endblock %}

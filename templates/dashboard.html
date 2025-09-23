@@ -19,7 +19,19 @@
             <div class="card-body">
                 <i class="fas fa-dumbbell fa-2x mb-2" style="color: var(--primary-color);"></i>
                 <h5 class="card-title">T1 Exercises</h5>
-                <h3 class="text-primary">4</h3>
+                <h3 class="text-primary">
+                    {% if program_days %}
+                        {% set t1_count = [] %}
+                        {% for day in program_days %}
+                            {% if day.t1_exercise not in t1_count %}
+                                {% set _ = t1_count.append(day.t1_exercise) %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ t1_count|length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h3>
                 <small class="text-muted">Main compound lifts</small>
             </div>
         </div>
@@ -29,7 +41,19 @@
             <div class="card-body">
                 <i class="fas fa-weight-hanging fa-2x mb-2" style="color: var(--warning-color);"></i>
                 <h5 class="card-title">T2 Exercises</h5>
-                <h3 class="text-warning">3</h3>
+                <h3 class="text-warning">
+                    {% if program_days %}
+                        {% set t2_count = [] %}
+                        {% for day in program_days %}
+                            {% if day.t2_exercise not in t2_count %}
+                                {% set _ = t2_count.append(day.t2_exercise) %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ t2_count|length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h3>
                 <small class="text-muted">Secondary lifts</small>
             </div>
         </div>
@@ -39,7 +63,22 @@
             <div class="card-body">
                 <i class="fas fa-heartbeat fa-2x mb-2" style="color: var(--success-color);"></i>
                 <h5 class="card-title">T3 Exercises</h5>
-                <h3 class="text-success">6</h3>
+                <h3 class="text-success">
+                    {% if program_days %}
+                        {% set t3_count = [] %}
+                        {% for day in program_days %}
+                            {% set day_t3_exercises = day.t3_exercises | from_json %}
+                            {% for exercise in day_t3_exercises %}
+                                {% if exercise.name not in t3_count %}
+                                    {% set _ = t3_count.append(exercise.name) %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                        {{ t3_count|length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h3>
                 <small class="text-muted">Assistance work</small>
             </div>
         </div>
@@ -49,7 +88,7 @@
             <div class="card-body">
                 <i class="fas fa-calendar-check fa-2x mb-2" style="color: var(--primary-color);"></i>
                 <h5 class="card-title">This Week</h5>
-                <h3 class="text-primary">3</h3>
+                <h3 class="text-primary">{{ completed_workouts_this_week or 0 }}</h3>
                 <small class="text-muted">Workouts completed</small>
             </div>
         </div>
@@ -79,22 +118,22 @@
                                 <p><strong>Volume:</strong> 3 sets x 5 reps (15 total reps)</p>
                                 <p><strong>Rest:</strong> 3-5 minutes</p>
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Bench Press</span>
-                                        <span class="badge bg-primary">185 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Squat</span>
-                                        <span class="badge bg-primary">225 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Deadlift</span>
-                                        <span class="badge bg-primary">275 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Overhead Press</span>
-                                        <span class="badge bg-primary">125 lbs</span>
-                                    </li>
+                                    {% if program_days %}
+                                        {% set t1_exercises = [] %}
+                                        {% for day in program_days %}
+                                            {% if day.t1_exercise not in t1_exercises %}
+                                                {% set _ = t1_exercises.append(day.t1_exercise) %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><i class="fas fa-weight-hanging me-2"></i>{{ day.t1_exercise }}</span>
+                                                    <span class="badge bg-primary">{{ day.t1_start_weight }} {{ 'kg' if user.units == 'metric' else 'lbs' }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="list-group-item text-center text-muted">
+                                            <i class="fas fa-info-circle me-2"></i>No program configured yet
+                                        </li>
+                                    {% endif %}
                                 </ul>
                             </div>
                         </div>
@@ -114,18 +153,22 @@
                                 <p><strong>Volume:</strong> 3 sets x 10 reps (30 total reps)</p>
                                 <p><strong>Rest:</strong> 2-3 minutes</p>
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Incline Bench Press</span>
-                                        <span class="badge bg-warning">155 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Front Squat</span>
-                                        <span class="badge bg-warning">185 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Romanian Deadlift</span>
-                                        <span class="badge bg-warning">225 lbs</span>
-                                    </li>
+                                    {% if program_days %}
+                                        {% set t2_exercises = [] %}
+                                        {% for day in program_days %}
+                                            {% if day.t2_exercise not in t2_exercises %}
+                                                {% set _ = t2_exercises.append(day.t2_exercise) %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><i class="fas fa-weight-hanging me-2"></i>{{ day.t2_exercise }}</span>
+                                                    <span class="badge bg-warning">{{ day.t2_start_weight }} {{ 'kg' if user.units == 'metric' else 'lbs' }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="list-group-item text-center text-muted">
+                                            <i class="fas fa-info-circle me-2"></i>No program configured yet
+                                        </li>
+                                    {% endif %}
                                 </ul>
                             </div>
                         </div>
@@ -145,18 +188,25 @@
                                 <p><strong>Volume:</strong> 3 sets x 15+ reps (45+ total reps)</p>
                                 <p><strong>Rest:</strong> 60-90 seconds</p>
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Bicep Curls</span>
-                                        <span class="badge bg-success">25 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Tricep Pulldowns</span>
-                                        <span class="badge bg-success">45 lbs</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-weight-hanging me-2"></i>Lateral Raises</span>
-                                        <span class="badge bg-success">15 lbs</span>
-                                    </li>
+                                    {% if program_days %}
+                                        {% set t3_exercises = [] %}
+                                        {% for day in program_days %}
+                                            {% set day_t3_exercises = day.t3_exercises | from_json %}
+                                            {% for exercise in day_t3_exercises %}
+                                                {% if exercise.name not in t3_exercises %}
+                                                    {% set _ = t3_exercises.append(exercise.name) %}
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <span><i class="fas fa-weight-hanging me-2"></i>{{ exercise.name }}</span>
+                                                        <span class="badge bg-success">{{ exercise.start_weight }} {{ 'kg' if user.units == 'metric' else 'lbs' }}</span>
+                                                    </li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="list-group-item text-center text-muted">
+                                            <i class="fas fa-info-circle me-2"></i>No program configured yet
+                                        </li>
+                                    {% endif %}
                                 </ul>
                             </div>
                         </div>
@@ -195,39 +245,25 @@
             </div>
             <div class="card-body">
                 <div class="timeline">
-                    <div class="d-flex mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="fas fa-check text-white"></i>
+                    {% if recent_workouts %}
+                        {% for workout in recent_workouts %}
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-check text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">Workout Completed</h6>
+                                <small class="text-muted">{{ workout.date.strftime('%B %d, %Y') }} - Day {{ workout.program_day.day_number }}</small>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-1">Bench Press Workout</h6>
-                            <small class="text-muted">Today - 3x5 @ 185 lbs</small>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle me-2"></i>No recent activity
                         </div>
-                    </div>
-                    <div class="d-flex mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="fas fa-plus text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-1">Squat Added</h6>
-                            <small class="text-muted">Yesterday - New exercise</small>
-                        </div>
-                    </div>
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="fas fa-edit text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-1">Program Updated</h6>
-                            <small class="text-muted">3 days ago - TM adjusted</small>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

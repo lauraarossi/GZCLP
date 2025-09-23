@@ -192,7 +192,18 @@
                                             N/A
                                         {% endif %}
                                     </td>
-                                    <td>{{ workout.sets_completed or 'N/A' }}</td>
+                                    <td>
+                                        {% if workout.sets_completed %}
+                                            {% set exercises_data = workout.sets_completed | from_json %}
+                                            {% for exercise in exercises_data %}
+                                                <span class="badge bg-{{ 'primary' if exercise.tier == 'T1' else 'warning' if exercise.tier == 'T2' else 'success' }} me-1">
+                                                    {{ exercise.tier }}: {{ exercise.performance }}
+                                                </span>
+                                            {% endfor %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
                                     <td>N/A</td>
                                 </tr>
                                 {% endfor %}
@@ -211,6 +222,47 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.performance-options .form-check {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.performance-options .form-check:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.performance-options .form-check:has(input:checked) {
+    background-color: #e7f3ff;
+    border-color: #0d6efd;
+}
+
+.performance-options .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.performance-options .form-check-label {
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.performance-options .form-check-label strong {
+    color: #495057;
+}
+
+.performance-options .form-check-label small {
+    color: #6c757d;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -259,6 +311,39 @@
         });
     }
     
+    function getPerformanceOptions(tier, index = 0) {
+        const options = {
+            'T1': [
+                { value: '5x3', label: '5x3', description: '5 sets × 3 reps' },
+                { value: '2x6', label: '2x6', description: '2 sets × 6 reps' },
+                { value: '10x1', label: '10x1', description: '10 sets × 1 rep' },
+                { value: 'failed', label: 'Failed', description: 'Could not complete prescribed reps' }
+            ],
+            'T2': [
+                { value: '3x10', label: '3x10', description: '3 sets × 10 reps' },
+                { value: '3x8', label: '3x8', description: '3 sets × 8 reps' },
+                { value: '3x6', label: '3x6', description: '3 sets × 6 reps' },
+                { value: 'failed', label: 'Failed', description: 'Could not complete prescribed reps' }
+            ],
+            'T3': [
+                { value: '3x15', label: '3x15', description: '3 sets × 15 reps' },
+                { value: 'failed', label: 'Failed', description: 'Could not complete prescribed reps' }
+            ]
+        };
+        
+        const tierOptions = options[tier] || [];
+        return tierOptions.map(option => `
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="performance-${tier}-${index}" 
+                       id="${option.value}-${tier}-${index}" value="${option.value}">
+                <label class="form-check-label" for="${option.value}-${tier}-${index}">
+                    <strong>${option.label}</strong>
+                    <small class="text-muted d-block">${option.description}</small>
+                </label>
+            </div>
+        `).join('');
+    }
+    
     function addExerciseCard(tier, name, startWeight, currentWeight, increment, badgeColor, index = 0) {
         const exerciseList = document.getElementById('exercise-list');
         const cardHtml = `
@@ -269,33 +354,24 @@
                             <h6 class="card-title mb-1">
                                 <span class="badge bg-${badgeColor}">${tier}</span> ${name}
                             </h6>
-                            <small class="text-muted">Start: ${startWeight} kg, Increment: +${increment} kg/week</small>
+                            <small class="text-muted">Start: ${startWeight} {{ 'kg' if user.units == 'metric' else 'lbs' }}, Increment: +${increment} {{ 'kg' if user.units == 'metric' else 'lbs' }}/week</small>
                         </div>
                         <div class="text-end">
-                            <div class="h5 mb-0">${currentWeight} kg</div>
+                            <div class="h5 mb-0">${currentWeight} {{ 'kg' if user.units == 'metric' else 'lbs' }}</div>
                             <small class="text-muted">Week ${currentWeek} Weight</small>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-3">
-                            <label class="form-label">Sets</label>
-                            <input type="number" class="form-control" value="3" min="1" max="10" readonly>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Reps</label>
-                            <input type="number" class="form-control" value="${tier === 'T1' ? '5' : tier === 'T2' ? '10' : '15'}" min="1" max="50">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Weight (kg)</label>
-                            <input type="number" class="form-control weight-input" value="${currentWeight}" step="0.5">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Completed</label>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="completed-${tier}-${index}">
-                                <label class="form-check-label" for="completed-${tier}-${index}">Done</label>
+                        <div class="col-md-8">
+                            <label class="form-label">Performance</label>
+                            <div class="performance-options" data-tier="${tier}" data-index="${index}">
+                                ${getPerformanceOptions(tier, index)}
                             </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Weight ({{ 'kg' if user.units == 'metric' else 'lbs' }})</label>
+                            <input type="number" class="form-control weight-input" value="${currentWeight}" step="0.5">
                         </div>
                     </div>
                 </div>
@@ -305,9 +381,92 @@
     }
     
     function completeWorkout() {
-        // Collect workout data and submit
-        alert('Workout completed! (This would save to database)');
-        cancelWorkout();
+        // Collect workout data
+        const workoutData = {
+            day: selectedDay,
+            exercises: []
+        };
+        
+        // Get all exercise cards from the workout tracking section only
+        const exerciseCards = document.querySelectorAll('#exercise-list .tier-t1, #exercise-list .tier-t2, #exercise-list .tier-t3');
+        let hasErrors = false;
+        let errorMessages = [];
+        
+        exerciseCards.forEach((card, cardIndex) => {
+            const tier = card.classList.contains('tier-t1') ? 'T1' : 
+                        card.classList.contains('tier-t2') ? 'T2' : 'T3';
+            
+            // Get the actual index from the data attribute
+            const performanceOptions = card.querySelector('.performance-options');
+            const actualIndex = performanceOptions ? performanceOptions.getAttribute('data-index') : cardIndex;
+            
+            // Get performance selection
+            let performanceRadio = card.querySelector(`input[name="performance-${tier}-${actualIndex}"]:checked`);
+            if (!performanceRadio) {
+                // Fallback: find any checked radio in this card
+                performanceRadio = card.querySelector('input[type="radio"]:checked');
+            }
+            const performance = performanceRadio ? performanceRadio.value : null;
+            
+            // Get weight
+            const weightInput = card.querySelector('.weight-input');
+            const weight = weightInput ? parseFloat(weightInput.value) : null;
+            
+            // Get exercise name from the card title
+            const titleElement = card.querySelector('.card-title');
+            const exerciseName = titleElement ? titleElement.textContent.replace(`T1 `, '').replace(`T2 `, '').replace(`T3 `, '') : '';
+            
+            // Validate performance selection
+            if (!performance) {
+                hasErrors = true;
+                errorMessages.push(`${tier} ${exerciseName.trim()}: Please select a performance option`);
+            }
+            
+            // Validate weight
+            if (weight === null || weight === undefined || weight < 0) {
+                hasErrors = true;
+                errorMessages.push(`${tier} ${exerciseName.trim()}: Please enter a valid weight`);
+            }
+            
+            workoutData.exercises.push({
+                tier: tier,
+                name: exerciseName.trim(),
+                performance: performance,
+                weight: weight
+            });
+        });
+        
+        // Check for validation errors
+        if (hasErrors) {
+            alert('Please fix the following errors:\n\n' + errorMessages.join('\n'));
+            return;
+        }
+        
+        console.log('Workout Data:', workoutData);
+        
+        // Submit to backend
+        fetch('/save_workout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(workoutData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Workout saved successfully!');
+                cancelWorkout();
+                // Refresh the page to show updated data
+                location.reload();
+            } else {
+                alert('Error saving workout: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving workout. Please try again.');
+        });
     }
     
     function cancelWorkout() {

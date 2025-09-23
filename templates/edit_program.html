@@ -2,6 +2,266 @@
 
 {% block title %}Edit Program - GZCLP Tracker{% endblock %}
 
+{% macro render_day_form(day_num, existing_day=None) %}
+    <form method="POST" action="{{ url_for('save_program_day', program_id=program.id) }}">
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="day_number" value="{{ day_num }}">
+        
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-fire text-primary me-2"></i>T1 Exercise</label>
+            <select class="form-select" name="t1_exercise" required>
+                <option value="">Select T1 Exercise...</option>
+                <option value="Squat (Barbell)" {% if existing_day and existing_day.t1_exercise == "Squat (Barbell)" %}selected{% endif %}>Squat (Barbell)</option>
+                <option value="Deadlift (Barbell)" {% if existing_day and existing_day.t1_exercise == "Deadlift (Barbell)" %}selected{% endif %}>Deadlift (Barbell)</option>
+                <option value="Bench Press (Barbell)" {% if existing_day and existing_day.t1_exercise == "Bench Press (Barbell)" %}selected{% endif %}>Bench Press (Barbell)</option>
+                <option value="Overhead Press (Barbell)" {% if existing_day and existing_day.t1_exercise == "Overhead Press (Barbell)" %}selected{% endif %}>Overhead Press (Barbell)</option>
+            </select>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label">Start Weight ({{ 'kg' if user.units == 'metric' else 'lbs' }})</label>
+                <input type="number" class="form-control" name="t1_start_weight" 
+                       step="0.5" placeholder="60" value="{{ existing_day.t1_start_weight if existing_day and existing_day.t1_start_weight is not none else '' }}" required>
+            </div>
+            <div class="col-6">
+                <label class="form-label">Weekly Increment</label>
+                <select class="form-select" name="t1_increment" required>
+                    <option value="2.5" {% if existing_day and existing_day.t1_increment == 2.5 %}selected{% endif %}>2.5 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                    <option value="5.0" {% if existing_day and existing_day.t1_increment == 5.0 %}selected{% endif %}>5.0 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-bolt text-warning me-2"></i>T2 Exercise</label>
+            <select class="form-select" name="t2_exercise" required>
+                <option value="">Select T2 Exercise...</option>
+                <option value="Squat (Barbell)" {% if existing_day and existing_day.t2_exercise == "Squat (Barbell)" %}selected{% endif %}>Squat (Barbell)</option>
+                <option value="Deadlift (Barbell)" {% if existing_day and existing_day.t2_exercise == "Deadlift (Barbell)" %}selected{% endif %}>Deadlift (Barbell)</option>
+                <option value="Bench Press (Barbell)" {% if existing_day and existing_day.t2_exercise == "Bench Press (Barbell)" %}selected{% endif %}>Bench Press (Barbell)</option>
+                <option value="Overhead Press (Barbell)" {% if existing_day and existing_day.t2_exercise == "Overhead Press (Barbell)" %}selected{% endif %}>Overhead Press (Barbell)</option>
+                <option value="Chest Press (Machine)" {% if existing_day and existing_day.t2_exercise == "Chest Press (Machine)" %}selected{% endif %}>Chest Press (Machine)</option>
+                <option value="Flat Bench Press (Barbell)" {% if existing_day and existing_day.t2_exercise == "Flat Bench Press (Barbell)" %}selected{% endif %}>Flat Bench Press (Barbell)</option>
+                <option value="Flat Bench Press (Dumbbell)" {% if existing_day and existing_day.t2_exercise == "Flat Bench Press (Dumbbell)" %}selected{% endif %}>Flat Bench Press (Dumbbell)</option>
+                <option value="Flat Bench Press (Smith Machine)" {% if existing_day and existing_day.t2_exercise == "Flat Bench Press (Smith Machine)" %}selected{% endif %}>Flat Bench Press (Smith Machine)</option>
+                <option value="Incline Bench Press (Barbell)" {% if existing_day and existing_day.t2_exercise == "Incline Bench Press (Barbell)" %}selected{% endif %}>Incline Bench Press (Barbell)</option>
+                <option value="Incline Bench Press (Dumbbell)" {% if existing_day and existing_day.t2_exercise == "Incline Bench Press (Dumbbell)" %}selected{% endif %}>Incline Bench Press (Dumbbell)</option>
+                <option value="Incline Bench Press (Smith Machine)" {% if existing_day and existing_day.t2_exercise == "Incline Bench Press (Smith Machine)" %}selected{% endif %}>Incline Bench Press (Smith Machine)</option>
+                <option value="Incline Chest Press (Machine)" {% if existing_day and existing_day.t2_exercise == "Incline Chest Press (Machine)" %}selected{% endif %}>Incline Chest Press (Machine)</option>
+                <option value="Romanian Deadlift (Barbell)" {% if existing_day and existing_day.t2_exercise == "Romanian Deadlift (Barbell)" %}selected{% endif %}>Romanian Deadlift (Barbell)</option>
+                <option value="Romanian Deadlift (Dumbbell)" {% if existing_day and existing_day.t2_exercise == "Romanian Deadlift (Dumbbell)" %}selected{% endif %}>Romanian Deadlift (Dumbbell)</option>
+                <option value="Front Squat (Barbell)" {% if existing_day and existing_day.t2_exercise == "Front Squat (Barbell)" %}selected{% endif %}>Front Squat (Barbell)</option>
+                <option value="Leg Press (Machine)" {% if existing_day and existing_day.t2_exercise == "Leg Press (Machine)" %}selected{% endif %}>Leg Press (Machine)</option>
+                <option value="Bulgarian Split Squat" {% if existing_day and existing_day.t2_exercise == "Bulgarian Split Squat" %}selected{% endif %}>Bulgarian Split Squat</option>
+                <option value="Goblet Squat" {% if existing_day and existing_day.t2_exercise == "Goblet Squat" %}selected{% endif %}>Goblet Squat</option>
+                <option value="Weighted Lunges" {% if existing_day and existing_day.t2_exercise == "Weighted Lunges" %}selected{% endif %}>Weighted Lunges</option>
+                <option value="Shoulder Press (Barbell)" {% if existing_day and existing_day.t2_exercise == "Shoulder Press (Barbell)" %}selected{% endif %}>Shoulder Press (Barbell)</option>
+                <option value="Shoulder Press (Dumbbell)" {% if existing_day and existing_day.t2_exercise == "Shoulder Press (Dumbbell)" %}selected{% endif %}>Shoulder Press (Dumbbell)</option>
+                <option value="Shoulder Press (Machine)" {% if existing_day and existing_day.t2_exercise == "Shoulder Press (Machine)" %}selected{% endif %}>Shoulder Press (Machine)</option>
+            </select>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label">Start Weight ({{ 'kg' if user.units == 'metric' else 'lbs' }})</label>
+                <input type="number" class="form-control" name="t2_start_weight" 
+                       step="0.5" placeholder="50" value="{{ existing_day.t2_start_weight if existing_day and existing_day.t2_start_weight is not none else '' }}" required>
+            </div>
+            <div class="col-6">
+                <label class="form-label">Weekly Increment</label>
+                <select class="form-select" name="t2_increment" required>
+                    <option value="2.5" {% if existing_day and existing_day.t2_increment == 2.5 %}selected{% endif %}>2.5 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                    <option value="5.0" {% if existing_day and existing_day.t2_increment == 5.0 %}selected{% endif %}>5.0 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- T3 Exercise 1 -->
+        {% set t3_exercises = existing_day.t3_exercises | from_json if existing_day else [] %}
+        {% set t3_1 = t3_exercises[0] if t3_exercises|length > 0 else {} %}
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 1</label>
+            <select class="form-select" name="t3_exercise_1">
+                <option value="">None</option>
+                <optgroup label="Main Compounds">
+                    <option value="Squat (Barbell)" {% if t3_1.name == "Squat (Barbell)" %}selected{% endif %}>Squat (Barbell)</option>
+                    <option value="Deadlift (Barbell)" {% if t3_1.name == "Deadlift (Barbell)" %}selected{% endif %}>Deadlift (Barbell)</option>
+                    <option value="Bench Press (Barbell)" {% if t3_1.name == "Bench Press (Barbell)" %}selected{% endif %}>Bench Press (Barbell)</option>
+                    <option value="Overhead Press (Barbell)" {% if t3_1.name == "Overhead Press (Barbell)" %}selected{% endif %}>Overhead Press (Barbell)</option>
+                </optgroup>
+                <optgroup label="Assistance Work">
+                    <option value="Bicep Curl (Dumbbell)" {% if t3_1.name == "Bicep Curl (Dumbbell)" %}selected{% endif %}>Bicep Curl (Dumbbell)</option>
+                    <option value="Bicep Curl (Barbell)" {% if t3_1.name == "Bicep Curl (Barbell)" %}selected{% endif %}>Bicep Curl (Barbell)</option>
+                    <option value="Bicep Curl (Cables)" {% if t3_1.name == "Bicep Curl (Cables)" %}selected{% endif %}>Bicep Curl (Cables)</option>
+                    <option value="Tricep Pushdowns (Cables)" {% if t3_1.name == "Tricep Pushdowns (Cables)" %}selected{% endif %}>Tricep Pushdowns (Cables)</option>
+                    <option value="Lateral Raises (Dumbbell)" {% if t3_1.name == "Lateral Raises (Dumbbell)" %}selected{% endif %}>Lateral Raises (Dumbbell)</option>
+                    <option value="Lateral Raises (Cables)" {% if t3_1.name == "Lateral Raises (Cables)" %}selected{% endif %}>Lateral Raises (Cables)</option>
+                    <option value="Dips" {% if t3_1.name == "Dips" %}selected{% endif %}>Dips</option>
+                    <option value="Chest Flyes (Dumbbell)" {% if t3_1.name == "Chest Flyes (Dumbbell)" %}selected{% endif %}>Chest Flyes (Dumbbell)</option>
+                    <option value="Rear Delt Fly (Dumbbell)" {% if t3_1.name == "Rear Delt Fly (Dumbbell)" %}selected{% endif %}>Rear Delt Fly (Dumbbell)</option>
+                    <option value="Leg Curl (Machine)" {% if t3_1.name == "Leg Curl (Machine)" %}selected{% endif %}>Leg Curl (Machine)</option>
+                    <option value="Leg Extension (Machine)" {% if t3_1.name == "Leg Extension (Machine)" %}selected{% endif %}>Leg Extension (Machine)</option>
+                    <option value="Calf Raise on Leg Press Machine" {% if t3_1.name == "Calf Raise on Leg Press Machine" %}selected{% endif %}>Calf Raise on Leg Press Machine</option>
+                    <option value="Standing Calf Raise" {% if t3_1.name == "Standing Calf Raise" %}selected{% endif %}>Standing Calf Raise</option>
+                    <option value="Ab Machine" {% if t3_1.name == "Ab Machine" %}selected{% endif %}>Ab Machine</option>
+                    <option value="Cable Crunch" {% if t3_1.name == "Cable Crunch" %}selected{% endif %}>Cable Crunch</option>
+                    <option value="Lat Pulldown" {% if t3_1.name == "Lat Pulldown" %}selected{% endif %}>Lat Pulldown</option>
+                    <option value="Seated Row (Machine)" {% if t3_1.name == "Seated Row (Machine)" %}selected{% endif %}>Seated Row (Machine)</option>
+                    <option value="Bent Over Row (Barbell)" {% if t3_1.name == "Bent Over Row (Barbell)" %}selected{% endif %}>Bent Over Row (Barbell)</option>
+                    <option value="Shrugs" {% if t3_1.name == "Shrugs" %}selected{% endif %}>Shrugs</option>
+                    <option value="Weighted Hyperextensions" {% if t3_1.name == "Weighted Hyperextensions" %}selected{% endif %}>Weighted Hyperextensions</option>
+                    <option value="Assisted Pullup (Band)" {% if t3_1.name == "Assisted Pullup (Band)" %}selected{% endif %}>Assisted Pullup (Band)</option>
+                    <option value="Strict Pullup" {% if t3_1.name == "Strict Pullup" %}selected{% endif %}>Strict Pullup</option>
+                    <option value="Push-ups" {% if t3_1.name == "Push-ups" %}selected{% endif %}>Push-ups</option>
+                    <option value="Diamond Push-ups" {% if t3_1.name == "Diamond Push-ups" %}selected{% endif %}>Diamond Push-ups</option>
+                    <option value="Clapping Push-ups" {% if t3_1.name == "Clapping Push-ups" %}selected{% endif %}>Clapping Push-ups</option>
+                    <option value="Planks" {% if t3_1.name == "Planks" %}selected{% endif %}>Planks</option>
+                    <option value="GHD Back Extensions" {% if t3_1.name == "GHD Back Extensions" %}selected{% endif %}>GHD Back Extensions</option>
+                    <option value="Side Planks" {% if t3_1.name == "Side Planks" %}selected{% endif %}>Side Planks</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label">Start Weight ({{ 'kg' if user.units == 'metric' else 'lbs' }})</label>
+                <input type="number" class="form-control" name="t3_start_weight_1" 
+                       step="0.5" placeholder="20" value="{{ t3_1.start_weight if t3_1.start_weight is not none else '' }}">
+            </div>
+            <div class="col-6">
+                <label class="form-label">Weekly Increment</label>
+                <select class="form-select" name="t3_increment_1">
+                    <option value="">Select increment...</option>
+                    <option value="2.5" {% if t3_1.increment == 2.5 %}selected{% endif %}>2.5 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                    <option value="5.0" {% if t3_1.increment == 5.0 %}selected{% endif %}>5.0 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- T3 Exercise 2 -->
+        {% set t3_2 = t3_exercises[1] if t3_exercises|length > 1 else {} %}
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 2</label>
+            <select class="form-select" name="t3_exercise_2">
+                <option value="">None</option>
+                <optgroup label="Main Compounds">
+                    <option value="Squat (Barbell)" {% if t3_2.name == "Squat (Barbell)" %}selected{% endif %}>Squat (Barbell)</option>
+                    <option value="Deadlift (Barbell)" {% if t3_2.name == "Deadlift (Barbell)" %}selected{% endif %}>Deadlift (Barbell)</option>
+                    <option value="Bench Press (Barbell)" {% if t3_2.name == "Bench Press (Barbell)" %}selected{% endif %}>Bench Press (Barbell)</option>
+                    <option value="Overhead Press (Barbell)" {% if t3_2.name == "Overhead Press (Barbell)" %}selected{% endif %}>Overhead Press (Barbell)</option>
+                </optgroup>
+                <optgroup label="Assistance Work">
+                    <option value="Bicep Curl (Dumbbell)" {% if t3_2.name == "Bicep Curl (Dumbbell)" %}selected{% endif %}>Bicep Curl (Dumbbell)</option>
+                    <option value="Bicep Curl (Barbell)" {% if t3_2.name == "Bicep Curl (Barbell)" %}selected{% endif %}>Bicep Curl (Barbell)</option>
+                    <option value="Bicep Curl (Cables)" {% if t3_2.name == "Bicep Curl (Cables)" %}selected{% endif %}>Bicep Curl (Cables)</option>
+                    <option value="Tricep Pushdowns (Cables)" {% if t3_2.name == "Tricep Pushdowns (Cables)" %}selected{% endif %}>Tricep Pushdowns (Cables)</option>
+                    <option value="Lateral Raises (Dumbbell)" {% if t3_2.name == "Lateral Raises (Dumbbell)" %}selected{% endif %}>Lateral Raises (Dumbbell)</option>
+                    <option value="Lateral Raises (Cables)" {% if t3_2.name == "Lateral Raises (Cables)" %}selected{% endif %}>Lateral Raises (Cables)</option>
+                    <option value="Dips" {% if t3_2.name == "Dips" %}selected{% endif %}>Dips</option>
+                    <option value="Chest Flyes (Dumbbell)" {% if t3_2.name == "Chest Flyes (Dumbbell)" %}selected{% endif %}>Chest Flyes (Dumbbell)</option>
+                    <option value="Rear Delt Fly (Dumbbell)" {% if t3_2.name == "Rear Delt Fly (Dumbbell)" %}selected{% endif %}>Rear Delt Fly (Dumbbell)</option>
+                    <option value="Leg Curl (Machine)" {% if t3_2.name == "Leg Curl (Machine)" %}selected{% endif %}>Leg Curl (Machine)</option>
+                    <option value="Leg Extension (Machine)" {% if t3_2.name == "Leg Extension (Machine)" %}selected{% endif %}>Leg Extension (Machine)</option>
+                    <option value="Calf Raise on Leg Press Machine" {% if t3_2.name == "Calf Raise on Leg Press Machine" %}selected{% endif %}>Calf Raise on Leg Press Machine</option>
+                    <option value="Standing Calf Raise" {% if t3_2.name == "Standing Calf Raise" %}selected{% endif %}>Standing Calf Raise</option>
+                    <option value="Ab Machine" {% if t3_2.name == "Ab Machine" %}selected{% endif %}>Ab Machine</option>
+                    <option value="Cable Crunch" {% if t3_2.name == "Cable Crunch" %}selected{% endif %}>Cable Crunch</option>
+                    <option value="Lat Pulldown" {% if t3_2.name == "Lat Pulldown" %}selected{% endif %}>Lat Pulldown</option>
+                    <option value="Seated Row (Machine)" {% if t3_2.name == "Seated Row (Machine)" %}selected{% endif %}>Seated Row (Machine)</option>
+                    <option value="Bent Over Row (Barbell)" {% if t3_2.name == "Bent Over Row (Barbell)" %}selected{% endif %}>Bent Over Row (Barbell)</option>
+                    <option value="Shrugs" {% if t3_2.name == "Shrugs" %}selected{% endif %}>Shrugs</option>
+                    <option value="Weighted Hyperextensions" {% if t3_2.name == "Weighted Hyperextensions" %}selected{% endif %}>Weighted Hyperextensions</option>
+                    <option value="Assisted Pullup (Band)" {% if t3_2.name == "Assisted Pullup (Band)" %}selected{% endif %}>Assisted Pullup (Band)</option>
+                    <option value="Strict Pullup" {% if t3_2.name == "Strict Pullup" %}selected{% endif %}>Strict Pullup</option>
+                    <option value="Push-ups" {% if t3_2.name == "Push-ups" %}selected{% endif %}>Push-ups</option>
+                    <option value="Diamond Push-ups" {% if t3_2.name == "Diamond Push-ups" %}selected{% endif %}>Diamond Push-ups</option>
+                    <option value="Clapping Push-ups" {% if t3_2.name == "Clapping Push-ups" %}selected{% endif %}>Clapping Push-ups</option>
+                    <option value="Planks" {% if t3_2.name == "Planks" %}selected{% endif %}>Planks</option>
+                    <option value="GHD Back Extensions" {% if t3_2.name == "GHD Back Extensions" %}selected{% endif %}>GHD Back Extensions</option>
+                    <option value="Side Planks" {% if t3_2.name == "Side Planks" %}selected{% endif %}>Side Planks</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label">Start Weight ({{ 'kg' if user.units == 'metric' else 'lbs' }})</label>
+                <input type="number" class="form-control" name="t3_start_weight_2" 
+                       step="0.5" placeholder="20" value="{{ t3_2.start_weight if t3_2.start_weight is not none else '' }}">
+            </div>
+            <div class="col-6">
+                <label class="form-label">Weekly Increment</label>
+                <select class="form-select" name="t3_increment_2">
+                    <option value="">Select increment...</option>
+                    <option value="2.5" {% if t3_2.increment == 2.5 %}selected{% endif %}>2.5 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                    <option value="5.0" {% if t3_2.increment == 5.0 %}selected{% endif %}>5.0 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- T3 Exercise 3 -->
+        {% set t3_3 = t3_exercises[2] if t3_exercises|length > 2 else {} %}
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 3</label>
+            <select class="form-select" name="t3_exercise_3">
+                <option value="">None</option>
+                <optgroup label="Main Compounds">
+                    <option value="Squat (Barbell)" {% if t3_3.name == "Squat (Barbell)" %}selected{% endif %}>Squat (Barbell)</option>
+                    <option value="Deadlift (Barbell)" {% if t3_3.name == "Deadlift (Barbell)" %}selected{% endif %}>Deadlift (Barbell)</option>
+                    <option value="Bench Press (Barbell)" {% if t3_3.name == "Bench Press (Barbell)" %}selected{% endif %}>Bench Press (Barbell)</option>
+                    <option value="Overhead Press (Barbell)" {% if t3_3.name == "Overhead Press (Barbell)" %}selected{% endif %}>Overhead Press (Barbell)</option>
+                </optgroup>
+                <optgroup label="Assistance Work">
+                    <option value="Bicep Curl (Dumbbell)" {% if t3_3.name == "Bicep Curl (Dumbbell)" %}selected{% endif %}>Bicep Curl (Dumbbell)</option>
+                    <option value="Bicep Curl (Barbell)" {% if t3_3.name == "Bicep Curl (Barbell)" %}selected{% endif %}>Bicep Curl (Barbell)</option>
+                    <option value="Bicep Curl (Cables)" {% if t3_3.name == "Bicep Curl (Cables)" %}selected{% endif %}>Bicep Curl (Cables)</option>
+                    <option value="Tricep Pushdowns (Cables)" {% if t3_3.name == "Tricep Pushdowns (Cables)" %}selected{% endif %}>Tricep Pushdowns (Cables)</option>
+                    <option value="Lateral Raises (Dumbbell)" {% if t3_3.name == "Lateral Raises (Dumbbell)" %}selected{% endif %}>Lateral Raises (Dumbbell)</option>
+                    <option value="Lateral Raises (Cables)" {% if t3_3.name == "Lateral Raises (Cables)" %}selected{% endif %}>Lateral Raises (Cables)</option>
+                    <option value="Dips" {% if t3_3.name == "Dips" %}selected{% endif %}>Dips</option>
+                    <option value="Chest Flyes (Dumbbell)" {% if t3_3.name == "Chest Flyes (Dumbbell)" %}selected{% endif %}>Chest Flyes (Dumbbell)</option>
+                    <option value="Rear Delt Fly (Dumbbell)" {% if t3_3.name == "Rear Delt Fly (Dumbbell)" %}selected{% endif %}>Rear Delt Fly (Dumbbell)</option>
+                    <option value="Leg Curl (Machine)" {% if t3_3.name == "Leg Curl (Machine)" %}selected{% endif %}>Leg Curl (Machine)</option>
+                    <option value="Leg Extension (Machine)" {% if t3_3.name == "Leg Extension (Machine)" %}selected{% endif %}>Leg Extension (Machine)</option>
+                    <option value="Calf Raise on Leg Press Machine" {% if t3_3.name == "Calf Raise on Leg Press Machine" %}selected{% endif %}>Calf Raise on Leg Press Machine</option>
+                    <option value="Standing Calf Raise" {% if t3_3.name == "Standing Calf Raise" %}selected{% endif %}>Standing Calf Raise</option>
+                    <option value="Ab Machine" {% if t3_3.name == "Ab Machine" %}selected{% endif %}>Ab Machine</option>
+                    <option value="Cable Crunch" {% if t3_3.name == "Cable Crunch" %}selected{% endif %}>Cable Crunch</option>
+                    <option value="Lat Pulldown" {% if t3_3.name == "Lat Pulldown" %}selected{% endif %}>Lat Pulldown</option>
+                    <option value="Seated Row (Machine)" {% if t3_3.name == "Seated Row (Machine)" %}selected{% endif %}>Seated Row (Machine)</option>
+                    <option value="Bent Over Row (Barbell)" {% if t3_3.name == "Bent Over Row (Barbell)" %}selected{% endif %}>Bent Over Row (Barbell)</option>
+                    <option value="Shrugs" {% if t3_3.name == "Shrugs" %}selected{% endif %}>Shrugs</option>
+                    <option value="Weighted Hyperextensions" {% if t3_3.name == "Weighted Hyperextensions" %}selected{% endif %}>Weighted Hyperextensions</option>
+                    <option value="Assisted Pullup (Band)" {% if t3_3.name == "Assisted Pullup (Band)" %}selected{% endif %}>Assisted Pullup (Band)</option>
+                    <option value="Strict Pullup" {% if t3_3.name == "Strict Pullup" %}selected{% endif %}>Strict Pullup</option>
+                    <option value="Push-ups" {% if t3_3.name == "Push-ups" %}selected{% endif %}>Push-ups</option>
+                    <option value="Diamond Push-ups" {% if t3_3.name == "Diamond Push-ups" %}selected{% endif %}>Diamond Push-ups</option>
+                    <option value="Clapping Push-ups" {% if t3_3.name == "Clapping Push-ups" %}selected{% endif %}>Clapping Push-ups</option>
+                    <option value="Planks" {% if t3_3.name == "Planks" %}selected{% endif %}>Planks</option>
+                    <option value="GHD Back Extensions" {% if t3_3.name == "GHD Back Extensions" %}selected{% endif %}>GHD Back Extensions</option>
+                    <option value="Side Planks" {% if t3_3.name == "Side Planks" %}selected{% endif %}>Side Planks</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label">Start Weight ({{ 'kg' if user.units == 'metric' else 'lbs' }})</label>
+                <input type="number" class="form-control" name="t3_start_weight_3" 
+                       step="0.5" placeholder="20" value="{{ t3_3.start_weight if t3_3.start_weight is not none else '' }}">
+            </div>
+            <div class="col-6">
+                <label class="form-label">Weekly Increment</label>
+                <select class="form-select" name="t3_increment_3">
+                    <option value="">Select increment...</option>
+                    <option value="2.5" {% if t3_3.increment == 2.5 %}selected{% endif %}>2.5 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                    <option value="5.0" {% if t3_3.increment == 5.0 %}selected{% endif %}>5.0 {{ 'kg' if user.units == 'metric' else 'lbs' }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-2"></i>{% if existing_day %}Update{% else %}Save{% endif %} Day {{ day_num }}
+        </button>
+    </form>
+{% endmacro %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -75,287 +335,7 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
-                    {% if existing_day %}
-                        <!-- Show existing day configuration -->
-                        <div class="mb-3">
-                            <h6><i class="fas fa-fire text-primary me-2"></i>T1 - {{ existing_day.t1_exercise }}</h6>
-                            <p class="mb-0">
-                                Start: {{ existing_day.t1_start_weight }} kg, 
-                                Increment: +{{ existing_day.t1_increment }} kg/week
-                            </p>
-                        </div>
-                        <div class="mb-3">
-                            <h6><i class="fas fa-bolt text-warning me-2"></i>T2 - {{ existing_day.t2_exercise }}</h6>
-                            <p class="mb-0">
-                                Start: {{ existing_day.t2_start_weight }} kg, 
-                                Increment: +{{ existing_day.t2_increment }} kg/week
-                            </p>
-                        </div>
-                        <div class="mb-3">
-                            <h6><i class="fas fa-heart text-success me-2"></i>T3 Exercises</h6>
-                            {% set t3_exercises = existing_day.t3_exercises | from_json %}
-                            {% for exercise in t3_exercises %}
-                                <p class="mb-1 small">
-                                    {{ exercise.name }}: {{ exercise.start_weight }} kg (+{{ exercise.increment }} kg/week)
-                                </p>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <!-- Show form for new day -->
-                        <form method="POST" action="{{ url_for('save_program_day', program_id=program.id) }}">
-                            {{ form.hidden_tag() }}
-                            <input type="hidden" name="day_number" value="{{ day_num }}">
-                            
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fas fa-fire text-primary me-2"></i>T1 Exercise</label>
-                                <select class="form-select" name="t1_exercise" required>
-                                    <option value="">Select T1 Exercise...</option>
-                                    <option value="Squat (Barbell)">Squat (Barbell)</option>
-                                    <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
-                                    <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
-                                    <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
-                                </select>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label">Start Weight (kg)</label>
-                                    <input type="number" class="form-control" name="t1_start_weight" 
-                                           step="0.5" placeholder="60" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Weekly Increment</label>
-                                    <select class="form-select" name="t1_increment" required>
-                                        <option value="2.5">2.5 kg</option>
-                                        <option value="5.0">5.0 kg</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fas fa-bolt text-warning me-2"></i>T2 Exercise</label>
-                                <select class="form-select" name="t2_exercise" required>
-                                    <option value="">Select T2 Exercise...</option>
-                                    <option value="Squat (Barbell)">Squat (Barbell)</option>
-                                    <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
-                                    <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
-                                    <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
-                                    <option value="Chest Press (Machine)">Chest Press (Machine)</option>
-                                    <option value="Flat Bench Press (Barbell)">Flat Bench Press (Barbell)</option>
-                                    <option value="Flat Bench Press (Dumbbell)">Flat Bench Press (Dumbbell)</option>
-                                    <option value="Flat Bench Press (Smith Machine)">Flat Bench Press (Smith Machine)</option>
-                                    <option value="Incline Bench Press (Barbell)">Incline Bench Press (Barbell)</option>
-                                    <option value="Incline Bench Press (Dumbbell)">Incline Bench Press (Dumbbell)</option>
-                                    <option value="Incline Bench Press (Smith Machine)">Incline Bench Press (Smith Machine)</option>
-                                    <option value="Incline Chest Press (Machine)">Incline Chest Press (Machine)</option>
-                                    <option value="Romanian Deadlift (Barbell)">Romanian Deadlift (Barbell)</option>
-                                    <option value="Romanian Deadlift (Dumbbell)">Romanian Deadlift (Dumbbell)</option>
-                                    <option value="Front Squat (Barbell)">Front Squat (Barbell)</option>
-                                    <option value="Leg Press (Machine)">Leg Press (Machine)</option>
-                                    <option value="Bulgarian Split Squat">Bulgarian Split Squat</option>
-                                    <option value="Goblet Squat">Goblet Squat</option>
-                                    <option value="Weighted Lunges">Weighted Lunges</option>
-                                    <option value="Shoulder Press (Barbell)">Shoulder Press (Barbell)</option>
-                                    <option value="Shoulder Press (Dumbbell)">Shoulder Press (Dumbbell)</option>
-                                    <option value="Shoulder Press (Machine)">Shoulder Press (Machine)</option>
-                                </select>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label">Start Weight (kg)</label>
-                                    <input type="number" class="form-control" name="t2_start_weight" 
-                                           step="0.5" placeholder="50" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Weekly Increment</label>
-                                    <select class="form-select" name="t2_increment" required>
-                                        <option value="2.5">2.5 kg</option>
-                                        <option value="5.0">5.0 kg</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- T3 Exercise 1 -->
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 1</label>
-                                <select class="form-select" name="t3_exercise_1">
-                                    <option value="">None</option>
-                                    <optgroup label="Main Compounds">
-                                        <option value="Squat (Barbell)">Squat (Barbell)</option>
-                                        <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
-                                        <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
-                                        <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
-                                    </optgroup>
-                                    <optgroup label="Assistance Work">
-                                        <option value="Bicep Curl (Dumbbell)">Bicep Curl (Dumbbell)</option>
-                                        <option value="Bicep Curl (Barbell)">Bicep Curl (Barbell)</option>
-                                        <option value="Bicep Curl (Cables)">Bicep Curl (Cables)</option>
-                                        <option value="Tricep Pushdowns (Cables)">Tricep Pushdowns (Cables)</option>
-                                        <option value="Lateral Raises (Dumbbell)">Lateral Raises (Dumbbell)</option>
-                                        <option value="Lateral Raises (Cables)">Lateral Raises (Cables)</option>
-                                        <option value="Dips">Dips</option>
-                                        <option value="Chest Flyes (Dumbbell)">Chest Flyes (Dumbbell)</option>
-                                        <option value="Rear Delt Fly (Dumbbell)">Rear Delt Fly (Dumbbell)</option>
-                                        <option value="Leg Curl (Machine)">Leg Curl (Machine)</option>
-                                        <option value="Leg Extension (Machine)">Leg Extension (Machine)</option>
-                                        <option value="Calf Raise on Leg Press Machine">Calf Raise on Leg Press Machine</option>
-                                        <option value="Standing Calf Raise">Standing Calf Raise</option>
-                                        <option value="Ab Machine">Ab Machine</option>
-                                        <option value="Cable Crunch">Cable Crunch</option>
-                                        <option value="Lat Pulldown">Lat Pulldown</option>
-                                        <option value="Seated Row (Machine)">Seated Row (Machine)</option>
-                                        <option value="Bent Over Row (Barbell)">Bent Over Row (Barbell)</option>
-                                        <option value="Shrugs">Shrugs</option>
-                                        <option value="Weighted Hyperextensions">Weighted Hyperextensions</option>
-                                        <option value="Assisted Pullup (Band)">Assisted Pullup (Band)</option>
-                                        <option value="Strict Pullup">Strict Pullup</option>
-                                        <option value="Push-ups">Push-ups</option>
-                                        <option value="Diamond Push-ups">Diamond Push-ups</option>
-                                        <option value="Clapping Push-ups">Clapping Push-ups</option>
-                                        <option value="Planks">Planks</option>
-                                        <option value="GHD Back Extensions">GHD Back Extensions</option>
-                                        <option value="Side Planks">Side Planks</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label">Start Weight (kg)</label>
-                                    <input type="number" class="form-control" name="t3_start_weight_1" 
-                                           step="0.5" placeholder="20">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Weekly Increment</label>
-                                    <select class="form-select" name="t3_increment_1">
-                                        <option value="">Select increment...</option>
-                                        <option value="2.5">2.5 kg</option>
-                                        <option value="5.0">5.0 kg</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- T3 Exercise 2 -->
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 2</label>
-                                <select class="form-select" name="t3_exercise_2">
-                                    <option value="">None</option>
-                                    <optgroup label="Main Compounds">
-                                        <option value="Squat (Barbell)">Squat (Barbell)</option>
-                                        <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
-                                        <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
-                                        <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
-                                    </optgroup>
-                                    <optgroup label="Assistance Work">
-                                        <option value="Bicep Curl (Dumbbell)">Bicep Curl (Dumbbell)</option>
-                                        <option value="Bicep Curl (Barbell)">Bicep Curl (Barbell)</option>
-                                        <option value="Bicep Curl (Cables)">Bicep Curl (Cables)</option>
-                                        <option value="Tricep Pushdowns (Cables)">Tricep Pushdowns (Cables)</option>
-                                        <option value="Lateral Raises (Dumbbell)">Lateral Raises (Dumbbell)</option>
-                                        <option value="Lateral Raises (Cables)">Lateral Raises (Cables)</option>
-                                        <option value="Dips">Dips</option>
-                                        <option value="Chest Flyes (Dumbbell)">Chest Flyes (Dumbbell)</option>
-                                        <option value="Rear Delt Fly (Dumbbell)">Rear Delt Fly (Dumbbell)</option>
-                                        <option value="Leg Curl (Machine)">Leg Curl (Machine)</option>
-                                        <option value="Leg Extension (Machine)">Leg Extension (Machine)</option>
-                                        <option value="Calf Raise on Leg Press Machine">Calf Raise on Leg Press Machine</option>
-                                        <option value="Standing Calf Raise">Standing Calf Raise</option>
-                                        <option value="Ab Machine">Ab Machine</option>
-                                        <option value="Cable Crunch">Cable Crunch</option>
-                                        <option value="Lat Pulldown">Lat Pulldown</option>
-                                        <option value="Seated Row (Machine)">Seated Row (Machine)</option>
-                                        <option value="Bent Over Row (Barbell)">Bent Over Row (Barbell)</option>
-                                        <option value="Shrugs">Shrugs</option>
-                                        <option value="Weighted Hyperextensions">Weighted Hyperextensions</option>
-                                        <option value="Assisted Pullup (Band)">Assisted Pullup (Band)</option>
-                                        <option value="Strict Pullup">Strict Pullup</option>
-                                        <option value="Push-ups">Push-ups</option>
-                                        <option value="Diamond Push-ups">Diamond Push-ups</option>
-                                        <option value="Clapping Push-ups">Clapping Push-ups</option>
-                                        <option value="Planks">Planks</option>
-                                        <option value="GHD Back Extensions">GHD Back Extensions</option>
-                                        <option value="Side Planks">Side Planks</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label">Start Weight (kg)</label>
-                                    <input type="number" class="form-control" name="t3_start_weight_2" 
-                                           step="0.5" placeholder="20">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Weekly Increment</label>
-                                    <select class="form-select" name="t3_increment_2">
-                                        <option value="">Select increment...</option>
-                                        <option value="2.5">2.5 kg</option>
-                                        <option value="5.0">5.0 kg</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- T3 Exercise 3 -->
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fas fa-heart text-success me-2"></i>T3 Exercise 3</label>
-                                <select class="form-select" name="t3_exercise_3">
-                                    <option value="">None</option>
-                                    <optgroup label="Main Compounds">
-                                        <option value="Squat (Barbell)">Squat (Barbell)</option>
-                                        <option value="Deadlift (Barbell)">Deadlift (Barbell)</option>
-                                        <option value="Bench Press (Barbell)">Bench Press (Barbell)</option>
-                                        <option value="Overhead Press (Barbell)">Overhead Press (Barbell)</option>
-                                    </optgroup>
-                                    <optgroup label="Assistance Work">
-                                        <option value="Bicep Curl (Dumbbell)">Bicep Curl (Dumbbell)</option>
-                                        <option value="Bicep Curl (Barbell)">Bicep Curl (Barbell)</option>
-                                        <option value="Bicep Curl (Cables)">Bicep Curl (Cables)</option>
-                                        <option value="Tricep Pushdowns (Cables)">Tricep Pushdowns (Cables)</option>
-                                        <option value="Lateral Raises (Dumbbell)">Lateral Raises (Dumbbell)</option>
-                                        <option value="Lateral Raises (Cables)">Lateral Raises (Cables)</option>
-                                        <option value="Dips">Dips</option>
-                                        <option value="Chest Flyes (Dumbbell)">Chest Flyes (Dumbbell)</option>
-                                        <option value="Rear Delt Fly (Dumbbell)">Rear Delt Fly (Dumbbell)</option>
-                                        <option value="Leg Curl (Machine)">Leg Curl (Machine)</option>
-                                        <option value="Leg Extension (Machine)">Leg Extension (Machine)</option>
-                                        <option value="Calf Raise on Leg Press Machine">Calf Raise on Leg Press Machine</option>
-                                        <option value="Standing Calf Raise">Standing Calf Raise</option>
-                                        <option value="Ab Machine">Ab Machine</option>
-                                        <option value="Cable Crunch">Cable Crunch</option>
-                                        <option value="Lat Pulldown">Lat Pulldown</option>
-                                        <option value="Seated Row (Machine)">Seated Row (Machine)</option>
-                                        <option value="Bent Over Row (Barbell)">Bent Over Row (Barbell)</option>
-                                        <option value="Shrugs">Shrugs</option>
-                                        <option value="Weighted Hyperextensions">Weighted Hyperextensions</option>
-                                        <option value="Assisted Pullup (Band)">Assisted Pullup (Band)</option>
-                                        <option value="Strict Pullup">Strict Pullup</option>
-                                        <option value="Push-ups">Push-ups</option>
-                                        <option value="Diamond Push-ups">Diamond Push-ups</option>
-                                        <option value="Clapping Push-ups">Clapping Push-ups</option>
-                                        <option value="Planks">Planks</option>
-                                        <option value="GHD Back Extensions">GHD Back Extensions</option>
-                                        <option value="Side Planks">Side Planks</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label">Start Weight (kg)</label>
-                                    <input type="number" class="form-control" name="t3_start_weight_3" 
-                                           step="0.5" placeholder="20">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Weekly Increment</label>
-                                    <select class="form-select" name="t3_increment_3">
-                                        <option value="">Select increment...</option>
-                                        <option value="2.5">2.5 kg</option>
-                                        <option value="5.0">5.0 kg</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-save me-2"></i>Save Day {{ day_num }}
-                            </button>
-                        </form>
-                    {% endif %}
+                    {{ render_day_form(day_num, existing_day) }}
                 </div>
             </div>
         </div>
@@ -389,9 +369,17 @@
                                 <td>{{ day.t2_exercise }}</td>
                                 <td>
                                     {% set t3_exercises = day.t3_exercises | from_json %}
+                                    {% if t3_exercises %}
                                     {% for exercise in t3_exercises %}
-                                        {{ exercise.name }}{% if not loop.last %}, {% endif %}
+                                            <div class="small">
+                                                <strong>{{ exercise.name }}</strong><br>
+                                                <span class="text-muted">{{ exercise.start_weight }} {{ 'kg' if user.units == 'metric' else 'lbs' }} (+{{ exercise.increment }} {{ 'kg' if user.units == 'metric' else 'lbs' }}/week)</span>
+                                            </div>
+                                            {% if not loop.last %}<hr class="my-1">{% endif %}
                                     {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">No T3 exercises</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}

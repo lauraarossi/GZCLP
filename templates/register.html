@@ -29,6 +29,18 @@
                     </div>
                     
                     <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control form-control-lg") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
                         {{ form.password.label(class="form-label") }}
                         {{ form.password(class="form-control form-control-lg") }}
                         {% if form.password.errors %}

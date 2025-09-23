@@ -1,20 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, IntegerField, FloatField, TextAreaField
-from wtforms.validators import DataRequired, Length, EqualTo
+from flask_mail import Mail, Message
+from wtforms import StringField, PasswordField, SubmitField, SelectField, IntegerField, FloatField, TextAreaField, EmailField
+from wtforms.validators import DataRequired, Length, EqualTo, Email
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import json
+import secrets
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gzclp.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Email configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+mail = Mail(app)
 
 # Custom Jinja filters
 @app.template_filter('from_json')
@@ -37,10 +49,13 @@ def get_current_week():
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     units = db.Column(db.String(10), nullable=False, default='metric')  # metric or imperial
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
+    created_date = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     programs = db.relationship('Program', backref='user', lazy=True)
-    workout_logs = db.relationship('WorkoutLog', backref='user', lazy=True)
+    workout_logs = db.relationship('WorkoutLog', backref='user_workout_logs', lazy=True)
 
 class Program(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -72,6 +87,20 @@ class WorkoutLog(db.Model):
     week_number = db.Column(db.Integer, nullable=False)
     date = db.Column(db.Date, nullable=False)
     sets_completed = db.Column(db.Text, nullable=False)  # JSON string of sets data
+    
+    # Relationships
+    program = db.relationship('Program', backref='program_workout_logs')
+    program_day = db.relationship('ProgramDay', backref='program_day_workout_logs')
+
+class PasswordResetToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    
+    user = db.relationship('User', backref='password_reset_tokens')
 
 # Forms
 class LoginForm(FlaskForm):
@@ -81,10 +110,20 @@ class LoginForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
+    email = EmailField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     units = SelectField('Units', choices=[('metric', 'Metric (kg)'), ('imperial', 'Imperial (lbs)')], default='metric')
     submit = SubmitField('Register')
+
+class ForgotPasswordForm(FlaskForm):
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Send Reset Link')
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
 
 class ProgramForm(FlaskForm):
     name = StringField('Program Name', validators=[DataRequired(), Length(min=1, max=100)])
@@ -242,7 +281,28 @@ def index():
         flash('Session expired. Please login again.', 'error')
         return redirect(url_for('login'))
     
-    return render_template('dashboard.html', user=user)
+    # Get active program and its days
+    active_program = Program.query.filter_by(user_id=user.id, is_active=True).first()
+    program_days = []
+    if active_program:
+        program_days = ProgramDay.query.filter_by(program_id=active_program.id).all()
+    
+    # Calculate completed workouts this week
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    week_start = today - timedelta(days=today.weekday())  # Monday of this week
+    week_end = week_start + timedelta(days=6)  # Sunday of this week
+    
+    completed_workouts_this_week = WorkoutLog.query.filter(
+        WorkoutLog.user_id == user.id,
+        WorkoutLog.date >= week_start,
+        WorkoutLog.date <= week_end
+    ).count()
+    
+    # Get recent workouts (last 5)
+    recent_workouts = WorkoutLog.query.filter_by(user_id=user.id).join(ProgramDay).order_by(WorkoutLog.date.desc()).limit(5).all()
+    
+    return render_template('dashboard.html', user=user, program_days=program_days, completed_workouts_this_week=completed_workouts_this_week, recent_workouts=recent_workouts)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -266,8 +326,13 @@ def register():
             flash('Username already exists', 'error')
             return render_template('register.html', form=form)
         
+        if User.query.filter_by(email=form.email.data).first():
+            flash('Email already registered', 'error')
+            return render_template('register.html', form=form)
+        
         user = User(
             username=form.username.data,
+            email=form.email.data,
             password_hash=generate_password_hash(form.password.data),
             units=form.units.data
         )
@@ -276,6 +341,70 @@ def register():
         flash('Registration successful! Please login.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            # Generate reset token
+            token = secrets.token_urlsafe(32)
+            expires_at = datetime.utcnow() + timedelta(hours=1)
+            
+            # Invalidate any existing tokens for this user
+            PasswordResetToken.query.filter_by(user_id=user.id, used=False).update({'used': True})
+            
+            # Create new token
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=token,
+                expires_at=expires_at
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+            
+            # Send email
+            try:
+                msg = Message(
+                    'Password Reset Request - GZCLP Tracker',
+                    recipients=[user.email],
+                    html=render_template('email/reset_password.html', 
+                                       username=user.username, 
+                                       reset_url=url_for('reset_password', token=token, _external=True))
+                )
+                mail.send(msg)
+                flash('Password reset link sent to your email', 'success')
+            except Exception as e:
+                print(f"Email sending failed: {e}")
+                flash('Failed to send email. Please try again later.', 'error')
+        else:
+            flash('No account found with that email address', 'error')
+    return render_template('forgot_password.html', form=form)
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    form = ResetPasswordForm()
+    
+    # Validate token
+    reset_token = PasswordResetToken.query.filter_by(token=token, used=False).first()
+    if not reset_token or reset_token.expires_at < datetime.utcnow():
+        flash('Invalid or expired reset token', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if form.validate_on_submit():
+        # Update password
+        user = reset_token.user
+        user.password_hash = generate_password_hash(form.password.data)
+        
+        # Mark token as used
+        reset_token.used = True
+        
+        db.session.commit()
+        flash('Password updated successfully! Please login with your new password.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', form=form, token=token)
 
 @app.route('/logout')
 def logout():
@@ -358,74 +487,169 @@ def edit_program(program_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    program = Program.query.filter_by(id=program_id, user_id=session['user_id']).first()
+    user = User.query.get(session['user_id'])
+    if not user:
+        session.clear()
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('login'))
+    
+    program = Program.query.filter_by(id=program_id, user_id=user.id).first()
     if not program:
         flash('Program not found', 'error')
         return redirect(url_for('settings'))
     
     form = ProgramDayForm()
-    return render_template('edit_program.html', program=program, form=form)
+    return render_template('edit_program.html', program=program, form=form, user=user)
 
 @app.route('/save_program_day/<int:program_id>', methods=['POST'])
 def save_program_day(program_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    form = ProgramDayForm()
-    if form.validate_on_submit():
-        # Collect T3 exercises (only those that are filled in)
-        t3_exercises = []
-        
-        # T3 Exercise 1
-        if form.t3_exercise_1.data and form.t3_start_weight_1.data and form.t3_increment_1.data:
-            t3_exercises.append({
-                'name': form.t3_exercise_1.data,
-                'start_weight': form.t3_start_weight_1.data,
-                'increment': form.t3_increment_1.data
-            })
-        
-        # T3 Exercise 2
-        if form.t3_exercise_2.data and form.t3_start_weight_2.data and form.t3_increment_2.data:
-            t3_exercises.append({
-                'name': form.t3_exercise_2.data,
-                'start_weight': form.t3_start_weight_2.data,
-                'increment': form.t3_increment_2.data
-            })
-        
-        # T3 Exercise 3
-        if form.t3_exercise_3.data and form.t3_start_weight_3.data and form.t3_increment_3.data:
-            t3_exercises.append({
-                'name': form.t3_exercise_3.data,
-                'start_weight': form.t3_start_weight_3.data,
-                'increment': form.t3_increment_3.data
-            })
+    # Get form data directly from request
+    day_number = request.form.get('day_number')
+    t1_exercise = request.form.get('t1_exercise')
+    t1_start_weight = request.form.get('t1_start_weight')
+    t1_increment = request.form.get('t1_increment')
+    t2_exercise = request.form.get('t2_exercise')
+    t2_start_weight = request.form.get('t2_start_weight')
+    t2_increment = request.form.get('t2_increment')
+    
+    # Collect T3 exercises (only those that are filled in)
+    t3_exercises = []
+    
+    # T3 Exercise 1
+    t3_exercise_1 = request.form.get('t3_exercise_1')
+    t3_start_weight_1 = request.form.get('t3_start_weight_1')
+    t3_increment_1 = request.form.get('t3_increment_1')
+    
+    if t3_exercise_1 and t3_start_weight_1 and t3_start_weight_1.strip() != '' and t3_increment_1:
+        t3_exercises.append({
+            'name': t3_exercise_1,
+            'start_weight': float(t3_start_weight_1),
+            'increment': float(t3_increment_1)
+        })
+    
+    # T3 Exercise 2
+    t3_exercise_2 = request.form.get('t3_exercise_2')
+    t3_start_weight_2 = request.form.get('t3_start_weight_2')
+    t3_increment_2 = request.form.get('t3_increment_2')
+    
+    if t3_exercise_2 and t3_start_weight_2 and t3_start_weight_2.strip() != '' and t3_increment_2:
+        t3_exercises.append({
+            'name': t3_exercise_2,
+            'start_weight': float(t3_start_weight_2),
+            'increment': float(t3_increment_2)
+        })
+    
+    # T3 Exercise 3
+    t3_exercise_3 = request.form.get('t3_exercise_3')
+    t3_start_weight_3 = request.form.get('t3_start_weight_3')
+    t3_increment_3 = request.form.get('t3_increment_3')
+    
+    if t3_exercise_3 and t3_start_weight_3 and t3_start_weight_3.strip() != '' and t3_increment_3:
+        t3_exercises.append({
+            'name': t3_exercise_3,
+            'start_weight': float(t3_start_weight_3),
+            'increment': float(t3_increment_3)
+        })
+    
+    # Validate required fields
+    if not all([day_number, t1_exercise, t1_start_weight, t1_increment, t2_exercise, t2_start_weight, t2_increment]):
+        flash('Please fill in all required fields', 'error')
+        return redirect(url_for('edit_program', program_id=program_id))
+    
+    try:
         
         import json
         
-        program_day = ProgramDay(
-            program_id=program_id,
-            day_number=form.day_number.data,
-            t1_exercise=form.t1_exercise.data,
-            t1_start_weight=form.t1_start_weight.data,
-            t1_increment=form.t1_increment.data,
-            t2_exercise=form.t2_exercise.data,
-            t2_start_weight=form.t2_start_weight.data,
-            t2_increment=form.t2_increment.data,
-            t3_exercises=json.dumps(t3_exercises)
-        )
-        db.session.add(program_day)
-        db.session.commit()
-        flash(f'Day {form.day_number.data} saved successfully!', 'success')
-    else:
-        # Show form validation errors
-        error_messages = []
-        for field, errors in form.errors.items():
-            for error in errors:
-                error_messages.append(f'{field}: {error}')
+        # Check if this day already exists
+        existing_day = ProgramDay.query.filter_by(
+            program_id=program_id, 
+            day_number=int(day_number)
+        ).first()
         
-        flash(f'Form validation failed: {"; ".join(error_messages)}', 'error')
+        if existing_day:
+            # Update existing day
+            existing_day.t1_exercise = t1_exercise
+            existing_day.t1_start_weight = float(t1_start_weight)
+            existing_day.t1_increment = float(t1_increment)
+            existing_day.t2_exercise = t2_exercise
+            existing_day.t2_start_weight = float(t2_start_weight)
+            existing_day.t2_increment = float(t2_increment)
+            existing_day.t3_exercises = json.dumps(t3_exercises)
+            flash(f'Day {day_number} updated successfully!', 'success')
+        else:
+            # Create new day
+            program_day = ProgramDay(
+                program_id=program_id,
+                day_number=int(day_number),
+                t1_exercise=t1_exercise,
+                t1_start_weight=float(t1_start_weight),
+                t1_increment=float(t1_increment),
+                t2_exercise=t2_exercise,
+                t2_start_weight=float(t2_start_weight),
+                t2_increment=float(t2_increment),
+                t3_exercises=json.dumps(t3_exercises)
+            )
+            db.session.add(program_day)
+            flash(f'Day {day_number} saved successfully!', 'success')
+        
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving program day: {str(e)}")
+        flash(f'Error saving day: {str(e)}', 'error')
     
     return redirect(url_for('edit_program', program_id=program_id))
+
+@app.route('/save_workout', methods=['POST'])
+def save_workout():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        data = request.get_json()
+        user_id = session['user_id']
+        day_number = data.get('day')
+        exercises = data.get('exercises', [])
+        
+        # Get the active program and program day
+        active_program = Program.query.filter_by(user_id=user_id, is_active=True).first()
+        if not active_program:
+            return jsonify({'success': False, 'message': 'No active program found'}), 400
+        
+        program_day = ProgramDay.query.filter_by(
+            program_id=active_program.id, 
+            day_number=day_number
+        ).first()
+        if not program_day:
+            return jsonify({'success': False, 'message': 'Program day not found'}), 400
+        
+        # Calculate current week (simplified - you might want to make this more sophisticated)
+        from datetime import datetime
+        current_week = 1  # For now, assume week 1
+        
+        # Create workout log entry
+        workout_log = WorkoutLog(
+            user_id=user_id,
+            program_id=active_program.id,
+            program_day_id=program_day.id,
+            week_number=current_week,
+            date=datetime.now().date(),
+            sets_completed=json.dumps(exercises)
+        )
+        
+        db.session.add(workout_log)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Workout saved successfully!'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving workout: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error saving workout: {str(e)}'}), 500
 
 @app.route('/toggle_units')
 def toggle_units():
